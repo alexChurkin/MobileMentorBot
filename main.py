@@ -4,6 +4,7 @@ import asyncio
 import src.app as app
 
 
+
 async def main() -> None:
     await app.dp.start_polling(app.bot)
 
