@@ -11,6 +11,12 @@ from aiogram.types import Message, CallbackQuery
 from src.database_handler import database_handler
 from src.constants import MOBMENTOR_BOT_TOKEN
 
+commands_dict = {
+    "/setmodule": "выбрать обучающий модуль",
+    "/changetopic": "выбрать/сменить тему (в рамках модуля)",
+    "/help": "подробное описание команд"
+}
+
 # TODO Заменить на постоянное хранилище
 dp = Dispatcher(storage=MemoryStorage())
 bot = Bot(MOBMENTOR_BOT_TOKEN)
@@ -30,7 +36,16 @@ async def handler_start(message: Message) -> None:
     msg = (f"Привет, {html.bold(html.quote(message.from_user.first_name))}! "
            f"Я – твой персональный бот-ассистент, созданный, "
            f"чтобы помочь тебе разобраться в большом и интересном "
-           f"мире программирования.")
+           f"мире программирования.\n\n"
+           f"Я понимаю следующие команды:\n"
+           f"{''.join([f'{cmd} – {desc},\n' for cmd, desc in commands_dict.items()])[:-2]}.")
+    await message.answer(msg, parse_mode=ParseMode.HTML)
+
+# Обработка команды /help
+@dp.message(Command("help"))
+async def handler_start(message: Message) -> None:
+    msg = (f"Я понимаю следующие команды:\n"
+           f"{''.join([f'{cmd} – {desc},\n' for cmd, desc in commands_dict.items()])[:-2]}.")
     await message.answer(msg, parse_mode=ParseMode.HTML)
 
 
@@ -49,14 +64,14 @@ async def handle_module_selection(message: Message, state: FSMContext):
     msg_text = message.text.strip()
     if not msg_text.isdigit():
         await message.answer(
-            "Некорректный номер модуля. Пожалуйста, введите правильный номер.")
+            "Некорректный номер модуля. Пожалуйста, введи правильный номер.")
         return
 
     module_id = int(msg_text)
     module_name = database_handler.get_module_name(module_id)
     if not module_name:
         await message.answer(
-            "Некорректный номер модуля. Пожалуйста, введите правильный номер.")
+            "Некорректный номер модуля. Пожалуйста, введи правильный номер.")
         return
 
     topics = database_handler.get_topics_list(module_id)
@@ -74,28 +89,6 @@ async def handle_module_selection(message: Message, state: FSMContext):
     await message.answer(f"Выберите тему:\n{topics_list}", parse_mode=ParseMode.HTML)
 
 
-@dp.message(TopicSelection.waiting_topic_input)
-async def handle_topic_selection(message: Message, state: FSMContext):
-    # Получаем сохранённый module_id из FSM
-    data = await state.get_data()
-    selected_module_id = data.get("selected_module_id")
-
-    topic_text = message.text.strip()
-
-    # Проверка на корректность введённой темы может быть реализована здесь
-    # Например, если нужно проверить, существует ли тема в модуле:
-    topics = database_handler.get_topics_list(selected_module_id)
-    if not any(topic_text == topic[1] for topic in topics):
-        await message.answer("Пожалуйста, выберите корректную тему.")
-        return
-
-    # Выводим подтверждение или продолжаем выполнение логики
-    await message.answer(f"Вы выбрали тему: {topic_text} из модуля {selected_module_id}")
-
-    # После обработки можно сбросить состояние
-    await state.update_data(selected_topic_id=topic)
-
-
 # Обработка команды /changetopic
 @dp.message(Command("changetopic"))
 async def handler_changetopic(message: Message) -> None:
@@ -103,13 +96,35 @@ async def handler_changetopic(message: Message) -> None:
     await message.answer(msg, parse_mode=ParseMode.HTML)
 
 
-# Обработка команды /about
-@dp.message(Command("about"))
-async def handler_about(message: Message) -> None:
-    msg = ("Я – твой персональный бот-ассистент, созданный, "
-           "чтобы помочь тебе разобраться в большом и интересном "
-           "мире программирования.")
-    await message.answer(msg, parse_mode=ParseMode.HTML)
+@dp.message(TopicSelection.waiting_topic_input)
+async def handle_topic_selection(message: Message, state: FSMContext):
+    msg_text = message.text.strip()
+    if not msg_text.isdigit():
+        await message.answer(
+            "Некорректный номер темы. Пожалуйста, введи правильный номер.")
+        return
+
+    topic_id = int(msg_text)
+
+    # Получаем сохранённый module_id из FSM
+    data = await state.get_data()
+    selected_module_id = data.get("selected_module_id")
+    # module_name = database_handler.get_module_name(sel_module_id)
+
+    # Проверяем наличие в базе темы с выбранным номером
+    topic = database_handler.get_topic(selected_module_id, topic_id)
+    if not topic:
+        await message.answer(
+            "Некорректный номер темы. Пожалуйста, введи правильный номер.")
+        return
+
+    # Выводим подтверждение или продолжаем выполнение логики
+    await message.answer(f"<b>{topic[3]}</b>\n{topic[4]}",
+                         parse_mode=ParseMode.HTML)
+
+    # После обработки можно сбросить состояние
+    await state.clear()
+    await state.update_data(selected_topic_id=topic)
 
 
 # Обработка произвольного сообщения от пользователя, когда группа уже выбрана
