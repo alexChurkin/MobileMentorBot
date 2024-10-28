@@ -10,8 +10,8 @@ CREATE TABLE Modules (
 );
 
 CREATE TABLE Topics (
-        module_id INTEGER,
-        topic_id INTEGER,
+        module_id INTEGER NOT NULL,
+        topic_id INTEGER NOT NULL,
         topic_name TEXT NOT NULL,
         topic_text TEXT,
         PRIMARY KEY(module_id, topic_id),
@@ -19,12 +19,13 @@ CREATE TABLE Topics (
 );
 
 CREATE TABLE Questions (
-        question_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        module_id INTEGER,
-        topic_id INTEGER,
+        module_id INTEGER NOT NULL,
+        topic_id INTEGER NOT NULL,
+        question_id INTEGER NOT NULL,
         question_text TEXT NOT NULL,
         question_answer_text TEXT,
-        FOREIGN KEY(module_id) REFERENCES Modules(module_id) ON DELETE CASCADE
+        FOREIGN KEY(module_id, topic_id)
+                REFERENCES Topics(module_id, topic_id) ON DELETE CASCADE
 );
 
 CREATE VIEW TopicsView AS

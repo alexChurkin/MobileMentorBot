@@ -55,14 +55,16 @@ class DatabaseHandler():
                      topic['topic_name'], topic['topic_text'])
                 )
 
+                question_id = 1
                 for question in topic.get('topic_questions', []):
                     self.cursor.execute('''
                     INSERT INTO Questions(
-                        topic_id, question_text, question_answer_text
+                        module_id, topic_id, question_id, question_text, question_answer_text
                     )
-                    VALUES (?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?)
                     ''',
-                    (topic_id, question['question_text'],
+                    (module_id, topic_id, question_id,
+                     question['question_text'],
                      question['question_answer_text']))
                 topic_id += 1
         self.conn.commit()
@@ -98,6 +100,15 @@ class DatabaseHandler():
             WHERE module_id = ? AND topic_id = ?
         ''', (module_id, topic_id,))
         return self.cursor.fetchone()
+
+
+    def get_questions(self, module_id: int, topic_id: int) -> List[sqlite3.Row]:
+        self.cursor.execute('''
+            SELECT *
+            FROM Questions
+            WHERE module_id = ? AND topic_id = ?
+        ''', (module_id, topic_id,))
+        return self.cursor.fetchall()
 
 
 database_handler = DatabaseHandler()
