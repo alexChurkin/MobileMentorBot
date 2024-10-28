@@ -26,6 +26,9 @@ class TopicSelection(StatesGroup):
     waiting_topic_input = State()
     topic_selected = State()
 
+class QuestionSelection(StatesGroup):
+    question_input = State()
+
 
 # Обработка команды /start
 @dp.message(CommandStart())
@@ -124,7 +127,7 @@ async def handle_topic_selection(message: Message, state: FSMContext):
         return
 
     await message.answer(f"{topic[4]}\n"
-                         "------------\n"
+                         f"------------\n"
                          f"Модуль: {topic[1]}\n"
                          f"Тема: {topic[3]}\n",
                          reply_markup=gen_topic_keyboard(),
@@ -170,23 +173,21 @@ async def handler_ask_question(message: Message, state: FSMContext) -> None:
     topic = database_handler.get_topic(selected_module_id, selected_topic_id)
     questions = database_handler.get_questions(selected_module_id, selected_topic_id)
 
-    if not questions:
+    if questions:
+        await message.answer(
+            f"Популярные вопросы по теме:\n"
+            f"{''.join([f'{question[2]}. {question[3]}\n' for question in questions])}\n"
+            f"Введи номер вопроса, на который хочешь узнать ответ. \n"
+            f"Если здесь нет твоего вопроса, нажми «Нет моего вопроса» и введи свой вопрос. "
+            f"Я отправлю его преподавателю и вернусь к тебе с ответом!",
+            reply_markup=gen_question_keyboard(),
+            parse_mode=ParseMode.HTML)
+    else:
         await message.answer(
             f"Введи свой вопрос по теме «{topic[3]}».\n"
             f"Я отправлю его преподавателю и вернусь к тебе с ответом!")
-        return
-        # TODO Установить состояние в ожидание ответа преподавателя и хэндлить сообщения
-        # на это состояние приоритетнее (выше) всех остальных команд
-        # В хэндлере «Нет моего вопроса» делать то же самое
 
-    await message.answer(
-        f"Популярные вопросы по теме:\n"
-        f"{''.join([f'{question[2]}. {question[3]}\n' for question in questions])}\n"
-        f"Введи номер вопроса, на который хочешь узнать ответ. \n"
-        f"Если здесь нет твоего вопроса, нажми «Нет моего вопроса» и введи свой вопрос. "
-        f"Я отправлю его преподавателю и вернусь к тебе с ответом!",
-        reply_markup=gen_question_keyboard(),
-        parse_mode=ParseMode.HTML)
+    await state.set_state(QuestionSelection.question_input)
 
 
 # Обработка произвольного текста вне контекста запрошенного ботом ввода
@@ -202,6 +203,34 @@ async def handler_some_text_selected(message: Message, state: FSMContext) -> Non
         f"Сейчас ты изучаешь тему «{topic[3]}»\nиз модуля «{topic[1]}».\n"
         f"Ты всегда можешь задать вопрос, если что-то непонятно.",
         parse_mode=ParseMode.HTML)
+
+
+@dp.message(QuestionSelection.question_input)
+async def handler_question_selection_or_input(message: Message, state: FSMContext) -> None:
+    data = await state.get_data()
+    selected_module_id = data.get("selected_module_id")
+    selected_topic_id = data.get("selected_topic_id")
+
+    topic = database_handler.get_topic(selected_module_id, selected_topic_id)
+
+    msg_text = message.text.strip()
+    if msg_text.isdigit():
+        question_id = int(msg_text)
+        question_with_answer = database_handler \
+            .get_question_answer(selected_module_id, selected_topic_id, question_id)
+        if question_with_answer:
+            await state.set_state(TopicSelection.topic_selected)
+            await message.answer(f"Ответ:\n"
+                                 f"{question_with_answer[4]}", parse_mode=ParseMode.HTML)
+        else:
+            await message.answer("Здесь нет вопроса с таким номером.\n"
+                                 "Попробуй ввести другой номер или напиши свой вопрос.")
+        return
+
+    await state.set_state(TopicSelection.topic_selected)
+    # TODO Сохранить заданный вопрос в базу данных
+    await message.answer(
+        "Хорошо, друг! Я запомнил твой вопрос и вернусь, когда преподаватель ответит на него.")
 
 
 @dp.message()
