@@ -21,13 +21,10 @@ commands_dict = {
 dp = Dispatcher(storage=MemoryStorage())
 bot = Bot(MOBMENTOR_BOT_TOKEN)
 
-
-class ModuleSelection(StatesGroup):
-    waiting_module_input = State()
-
-
 class TopicSelection(StatesGroup):
+    waiting_module_input = State()
     waiting_topic_input = State()
+    everything_selected = State()
 
 
 # Обработка команды /start
@@ -40,6 +37,7 @@ async def handler_start(message: Message) -> None:
            f"Я понимаю следующие команды:\n"
            f"{''.join([f'{cmd} – {desc},\n' for cmd, desc in commands_dict.items()])[:-2]}.")
     await message.answer(msg, parse_mode=ParseMode.HTML)
+
 
 # Обработка команды /help
 @dp.message(Command("help"))
@@ -56,10 +54,11 @@ async def handler_setmodule(message: Message, state: FSMContext) -> None:
     msg = "Введите номер модуля для погружения:\n"
     for module in modules:
         msg += f"<b>{module[0]}.</b> {module[1]}\n"
-    await state.set_state(ModuleSelection.waiting_module_input)
+    await state.set_state(TopicSelection.waiting_module_input)
     await message.answer(msg, parse_mode=ParseMode.HTML)
 
-@dp.message(ModuleSelection.waiting_module_input)
+
+@dp.message(TopicSelection.waiting_module_input)
 async def handle_module_selection(message: Message, state: FSMContext):
     msg_text = message.text.strip()
     if not msg_text.isdigit():
@@ -91,9 +90,16 @@ async def handle_module_selection(message: Message, state: FSMContext):
 
 # Обработка команды /changetopic
 @dp.message(Command("changetopic"))
-async def handler_changetopic(message: Message) -> None:
-    msg = ("Для изучения доступны следующие темы:")
-    await message.answer(msg, parse_mode=ParseMode.HTML)
+async def handler_changetopic(message: Message, state: FSMContext) -> None:
+    data = await state.get_data()
+    selected_module_id = data.get("selected_module_id")
+    if not selected_module_id:
+        handler_setmodule(message, state)
+        return
+    topics = database_handler.get_topics_list(selected_module_id)
+    topics_list = "\n".join([f"<b>{t[0]}.</b> {t[1]}" for t in topics])
+    await state.set_state(TopicSelection.waiting_topic_input)
+    await message.answer(f"Выберите тему:\n{topics_list}", parse_mode=ParseMode.HTML)
 
 
 @dp.message(TopicSelection.waiting_topic_input)
@@ -109,25 +115,38 @@ async def handle_topic_selection(message: Message, state: FSMContext):
     # Получаем сохранённый module_id из FSM
     data = await state.get_data()
     selected_module_id = data.get("selected_module_id")
-    # module_name = database_handler.get_module_name(sel_module_id)
 
-    # Проверяем наличие в базе темы с выбранным номером
+    # Проверяем наличие в базе у данного модуля темы с выбранным номером
     topic = database_handler.get_topic(selected_module_id, topic_id)
     if not topic:
         await message.answer(
             "Некорректный номер темы. Пожалуйста, введи правильный номер.")
         return
 
-    # Выводим подтверждение или продолжаем выполнение логики
-    await message.answer(f"<b>{topic[3]}</b>\n{topic[4]}",
+    await message.answer(f"Модуль: {topic[1]}\nТема: {topic[3]}\n\n{topic[4]}",
                          parse_mode=ParseMode.HTML)
 
-    # После обработки можно сбросить состояние
-    await state.clear()
-    await state.update_data(selected_topic_id=topic)
+    await state.set_state(TopicSelection.everything_selected)
+    await state.update_data(selected_module_id=selected_module_id, selected_topic_id=topic_id)
 
 
-# Обработка произвольного сообщения от пользователя, когда группа уже выбрана
-# async def handler_typing_group(message: Message, state: FSMContext) -> None:
-#     await message.answer("Я не совсем понимаю, что именно нужно сделать. Пожалуйста, "
-#                          "используй команды для работы со мной.")
+# Обработка произвольного текста вне контекста запрошенного ботом ввода
+@dp.message(TopicSelection.everything_selected)
+async def handler_some_text_selected(message: Message, state: FSMContext) -> None:
+    data = await state.get_data()
+    selected_module_id = data.get("selected_module_id")
+    selected_topic_id = data.get("selected_topic_id")
+
+    topic = database_handler.get_topic(selected_module_id, selected_topic_id)
+
+    await message.answer(
+        f"Сейчас ты изучаешь тему «{topic[3]}» из модуля «{topic[1]}».\n"
+        f"Ты всегда можешь задать вопрос, если что-то непонятно.",
+        parse_mode=ParseMode.HTML)
+
+
+@dp.message()
+async def handler_some_text(message: Message) -> None:
+    msg = ("Я не понял твоей команды. Пожалуйста, используй команды из доступного набора:\n"
+           f"{''.join([f'{cmd} – {desc},\n' for cmd, desc in commands_dict.items()])[:-2]}.")
+    await message.answer(msg, parse_mode=ParseMode.HTML)
