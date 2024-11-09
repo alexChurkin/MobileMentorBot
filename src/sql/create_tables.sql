@@ -1,6 +1,7 @@
 DROP TABLE IF EXISTS Modules;
 DROP TABLE IF EXISTS Topics;
-DROP TABLE IF EXISTS Questions;
+DROP TABLE IF EXISTS AnsweredQuestions;
+DROP TABLE IF EXISTS OpenQuestions;
 DROP VIEW IF EXISTS TopicsView;
 
 CREATE TABLE Modules (
@@ -18,10 +19,20 @@ CREATE TABLE Topics (
         FOREIGN KEY(module_id) REFERENCES Modules(module_id) ON DELETE CASCADE
 );
 
-CREATE TABLE Questions (
+CREATE TABLE AnsweredQuestions (
         module_id INTEGER NOT NULL,
         topic_id INTEGER NOT NULL,
         question_id INTEGER NOT NULL,
+        question_text TEXT NOT NULL,
+        question_answer_text TEXT,
+        FOREIGN KEY(module_id, topic_id)
+                REFERENCES Topics(module_id, topic_id) ON DELETE CASCADE
+);
+
+CREATE TABLE OpenQuestions (
+        module_id INTEGER NOT NULL,
+        topic_id INTEGER NOT NULL,
+        question_id INTEGER PRIMARY KEY AUTOINCREMENT,
         question_text TEXT NOT NULL,
         question_answer_text TEXT,
         FOREIGN KEY(module_id, topic_id)

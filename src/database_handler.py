@@ -58,7 +58,7 @@ class DatabaseHandler():
                 question_id = 1
                 for question in topic.get('topic_questions', []):
                     self.cursor.execute('''
-                    INSERT INTO Questions(
+                    INSERT INTO AnsweredQuestions(
                         module_id, topic_id, question_id, question_text, question_answer_text
                     )
                     VALUES (?, ?, ?, ?, ?)
@@ -66,6 +66,7 @@ class DatabaseHandler():
                     (module_id, topic_id, question_id,
                      question['question_text'],
                      question['question_answer_text']))
+                    question_id += 1
                 topic_id += 1
         self.conn.commit()
 
@@ -105,7 +106,7 @@ class DatabaseHandler():
     def get_questions(self, module_id: int, topic_id: int) -> List[sqlite3.Row]:
         self.cursor.execute('''
             SELECT *
-            FROM Questions
+            FROM AnsweredQuestions
             WHERE module_id = ? AND topic_id = ?
         ''', (module_id, topic_id,))
         return self.cursor.fetchall()
@@ -115,10 +116,55 @@ class DatabaseHandler():
                             topic_id: int, question_id: int) -> sqlite3.Row:
         self.cursor.execute('''
             SELECT *
-            FROM Questions
+            FROM AnsweredQuestions
             WHERE module_id = ? AND topic_id = ? AND question_id = ?
         ''', (module_id, topic_id, question_id,))
         return self.cursor.fetchone()
+
+
+    def add_open_question(self, module_id: int,
+                          topic_id: int,
+                          question_text: str) -> None:
+        print(f"module_id = {module_id}, topic_id = {topic_id}, question_text = {question_text}")
+        self.cursor.execute('''
+            INSERT
+            INTO OpenQuestions
+            (module_id, topic_id, question_text)
+            VALUES
+            (?, ?, ?)
+        ''', (module_id, topic_id, question_text,))
+
+
+    def answer_open_question(self, question_id: int,
+                             answer_text: str) -> None:
+        open_question = self.cursor.execute('''
+            SELECT *
+            FROM OpenQuestions
+            WHERE question_id = ?
+        ''', (question_id,)).fetchone()
+
+        module_id, topic_id, question_text = \
+            open_question[0], open_question[1], open_question[3]
+
+        new_question_id = self.cursor.execute('''
+            SELECT MAX(question_id)
+            FROM AnsweredQuestions
+            WHERE module_id = ? AND topic_id = ?
+            ''', (module_id, topic_id,)
+        ).fetchone() + 1
+
+        self.cursor.executescript('''
+            DELETE * FROM OpenQuestions
+            WHERE question_id = ?;
+
+            INSERT INTO AnsweredQuestions(
+                module_id, topic_id, question_id, question_text, question_answer_text
+            )
+            VALUES (?, ?, ?, ?, ?);
+            ''',
+            (question_id,
+             module_id, topic_id, new_question_id, question_text, answer_text)
+        )
 
 
 database_handler = DatabaseHandler()

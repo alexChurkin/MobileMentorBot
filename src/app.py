@@ -6,7 +6,7 @@ from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message
 from src.database_handler import database_handler
 from src.constants import MOBMENTOR_BOT_TOKEN
 from src.keyboards import gen_topic_keyboard
@@ -137,7 +137,7 @@ async def handle_topic_selection(message: Message, state: FSMContext):
     await state.update_data(selected_module_id=selected_module_id, selected_topic_id=topic_id)
 
 
-@dp.message(lambda msg: msg.text.strip() == "Повторить теорию")
+@dp.message(Command("repeat"))
 async def handler_repeat_topic(message: Message, state: FSMContext) -> None:
     data = await state.get_data()
     selected_module_id = data.get("selected_module_id")
@@ -157,7 +157,7 @@ async def handler_repeat_topic(message: Message, state: FSMContext) -> None:
         parse_mode=ParseMode.HTML)
 
 
-@dp.message(lambda msg: msg.text.strip() == "У меня вопрос!")
+@dp.message(Command("question"))
 async def handler_ask_question(message: Message, state: FSMContext) -> None:
     data = await state.get_data()
     selected_module_id = data.get("selected_module_id")
@@ -210,8 +210,6 @@ async def handler_question_selection_or_input(message: Message, state: FSMContex
     selected_module_id = data.get("selected_module_id")
     selected_topic_id = data.get("selected_topic_id")
 
-    topic = database_handler.get_topic(selected_module_id, selected_topic_id)
-
     msg_text = message.text.strip()
     if msg_text.isdigit():
         question_id = int(msg_text)
@@ -228,9 +226,11 @@ async def handler_question_selection_or_input(message: Message, state: FSMContex
         return
 
     await state.set_state(TopicSelection.topic_selected)
-    # TODO Сохранить заданный вопрос в базу данных
+
+    database_handler.add_open_question(selected_module_id, selected_topic_id, msg_text)
     await message.answer(
         "Хорошо, друг! Я запомнил твой вопрос и вернусь, когда преподаватель ответит на него.")
+    print("Вот вроде записалось, а в базе в OpenQuestions пусто, вот дрянь)")
 
 
 @dp.message()
