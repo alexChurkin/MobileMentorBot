@@ -125,7 +125,8 @@ class DatabaseHandler():
     def add_open_question(self, module_id: int,
                           topic_id: int,
                           question_text: str) -> None:
-        print(f"module_id = {module_id}, topic_id = {topic_id}, question_text = {question_text}")
+        print(f"add_open_question called\n"
+              f"module_id = {module_id}, topic_id = {topic_id}, question_text = {question_text}")
         self.cursor.execute('''
             INSERT
             INTO OpenQuestions

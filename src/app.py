@@ -9,7 +9,6 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import Message
 from src.database_handler import database_handler
 from src.constants import MOBMENTOR_BOT_TOKEN
-from src.keyboards import gen_topic_keyboard
 
 commands_dict = {
     "/setmodule": "выбрать обучающий модуль",
@@ -130,7 +129,6 @@ async def handle_topic_selection(message: Message, state: FSMContext):
                          f"------------\n"
                          f"Модуль: {topic[1]}\n"
                          f"Тема: {topic[3]}\n",
-                         reply_markup=gen_topic_keyboard(),
                          parse_mode=ParseMode.HTML)
 
     await state.set_state(TopicSelection.topic_selected)
