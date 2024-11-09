@@ -9,7 +9,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import Message, CallbackQuery
 from src.database_handler import database_handler
 from src.constants import MOBMENTOR_BOT_TOKEN
-from src.keyboards import gen_topic_keyboard, gen_question_keyboard
+from src.keyboards import gen_topic_keyboard
 
 commands_dict = {
     "/setmodule": "выбрать обучающий модуль",
@@ -178,9 +178,8 @@ async def handler_ask_question(message: Message, state: FSMContext) -> None:
             f"Популярные вопросы по теме:\n"
             f"{''.join([f'{question[2]}. {question[3]}\n' for question in questions])}\n"
             f"Введи номер вопроса, на который хочешь узнать ответ. \n"
-            f"Если здесь нет твоего вопроса, нажми «Нет моего вопроса» и введи свой вопрос. "
+            f"Если здесь нет твоего вопроса, введи свой вопрос. "
             f"Я отправлю его преподавателю и вернусь к тебе с ответом!",
-            reply_markup=gen_question_keyboard(),
             parse_mode=ParseMode.HTML)
     else:
         await message.answer(
@@ -216,6 +215,7 @@ async def handler_question_selection_or_input(message: Message, state: FSMContex
     msg_text = message.text.strip()
     if msg_text.isdigit():
         question_id = int(msg_text)
+        print(f"question_id = {question_id}")
         question_with_answer = database_handler \
             .get_question_answer(selected_module_id, selected_topic_id, question_id)
         if question_with_answer:
@@ -238,3 +238,6 @@ async def handler_some_text(message: Message) -> None:
     msg = ("Я не понял твоей команды. Пожалуйста, используй команды из доступного набора:\n"
            f"{''.join([f'{cmd} – {desc},\n' for cmd, desc in commands_dict.items()])[:-2]}.")
     await message.answer(msg, parse_mode=ParseMode.HTML)
+
+
+# TODO  осталось задавание вопросов и чтобы преподаватели могли их брать себе и удалять или отвечать (и чтобы ответы клались в базу, если ответил)

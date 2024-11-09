@@ -117,7 +117,7 @@ class DatabaseHandler():
             SELECT *
             FROM Questions
             WHERE module_id = ? AND topic_id = ? AND question_id = ?
-        ''', (module_id, topic_id, topic_id,))
+        ''', (module_id, topic_id, question_id,))
         return self.cursor.fetchone()
 
 
