@@ -134,6 +134,7 @@ class DatabaseHandler():
             VALUES
             (?, ?, ?)
         ''', (module_id, topic_id, question_text,))
+        self.conn.commit()
 
 
     def answer_open_question(self, question_id: int,
@@ -166,6 +167,7 @@ class DatabaseHandler():
             (question_id,
              module_id, topic_id, new_question_id, question_text, answer_text)
         )
+        self.conn.commit()
 
 
 database_handler = DatabaseHandler()

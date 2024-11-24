@@ -228,7 +228,6 @@ async def handler_question_selection_or_input(message: Message, state: FSMContex
     database_handler.add_open_question(selected_module_id, selected_topic_id, msg_text)
     await message.answer(
         "Хорошо, друг! Я запомнил твой вопрос и вернусь, когда преподаватель ответит на него.")
-    print("Вот вроде записалось, а в базе в OpenQuestions пусто, вот дрянь)")
 
 
 @dp.message()
