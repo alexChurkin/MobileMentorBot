@@ -28,19 +28,19 @@ teachers_commands = [BotCommand(command="getquestions",   description="спис�
                      BotCommand(command="answerquestion", description="ответить на вопрос"),
                      BotCommand(command="addnewteacher",  description="добавить профиль для учителя"),
                      BotCommand(command="changepassword", description="сменить свой пароль"),
-                     
+
                      BotCommand(command="allmodules",     description="просмотреть все модули"),
                      BotCommand(command="alltopics",      description="просмотреть все темы в одном модуле"),
                      BotCommand(command="module",         description="просмотреть содержимое модуля"),
                      BotCommand(command="topic",          description="просмотреть содержимое темы"),
 
                      BotCommand(command="addnewmodule",   description="добавить новый модуль"),
-                     BotCommand(command="addnewtopic",    description="добавить новую тему"),                     
+                     BotCommand(command="addnewtopic",    description="добавить новую тему"),
                      BotCommand(command="changemodule",   description="изменить модуль"),
                      BotCommand(command="changetopic",    description="изменить тему"),
                      BotCommand(command="deletemodule",   description="удалить модуль"),
                      BotCommand(command="deletetopic",    description="удалить тему"),
-                     
+
                      BotCommand(command="help",           description="подробное описание команд")]
 
 
@@ -221,11 +221,11 @@ async def handler_ask_question(message: Message, state: FSMContext) -> None:
             await message.answer("Модулей пока нет.")
             await state.set_state(EmptyContext.pupil_empty_context)
         return
-    
+
     if not selected_topic_id:
         await message.answer("Прости, дорогой друг!\n"
                              "Я не могу ответить на твой вопрос,\nпока ты не выберешь тему :(")
-        
+
         topics_list = database_handler.get_topics_list(selected_module_id)
         if len(topics_list) > 0:
             msg += "Введите номер темы:\n"
@@ -318,7 +318,6 @@ async def handler_get_questions(message: Message, state: FSMContext) -> None:
     else:
         await message.answer("Новых вопросов пока нет.", parse_mode=ParseMode.HTML)
     await state.set_state(EmptyContext.teacher_empty_context)
-    
 
 
 # Обработка команды /answerquestion
@@ -632,7 +631,7 @@ async def handle_waiting_p_quesition_module_input(message: Message, state: FSMCo
     if module == None:
         await message.answer("Некорректный номер модуля. Пожалуйста, введите правильный номер.")
         return
-    
+
     await state.update_data(selected_module_id=module_id)
 
     topics_list = database_handler.get_topics_list(module_id)
@@ -660,7 +659,7 @@ async def handle_waiting_p_quesition_topic_input(message: Message, state: FSMCon
     if topic == None:
         await message.answer("Некорректный номер темы. Пожалуйста, введите правильный номер.")
         return
-    
+
     await state.update_data(selected_topic_id=topic_id)
 
     topic = database_handler.get_topic(module_id, topic_id)
@@ -692,12 +691,12 @@ async def handler_question_selection_or_input(message: Message, state: FSMContex
     if msg_text.isdigit():
         question_num = int(msg_text)-1
         questions = database_handler.get_questions_by_topic(selected_module_id, selected_topic_id)
-        
+
         if question_num < 0 or question_num > len(questions):
             await message.answer("Здесь нет вопроса с таким номером.\nПопробуй ввести другой номер или напиши свой вопрос.")
-        
+
         question_id = questions[question_num][0]
-        
+
         question_with_answer = database_handler.get_question_answer(selected_module_id, selected_topic_id, question_id)
         if question_with_answer != None:
             await message.answer(f"Ответ:\n{question_with_answer[0]}", parse_mode=ParseMode.HTML) #question_answer_text
@@ -739,7 +738,7 @@ async def handle_waiting_t_quesition_number_input(message: Message, state: FSMCo
 
     question_id = int(msg_text)
     question = database_handler.get_question_text(question_id)
-    if not question: 
+    if not question:
         await message.answer("Некорректный номер вопроса. Пожалуйста, введите правильный номер.")
 
     await state.update_data(selected_question=question_id)
@@ -761,7 +760,7 @@ async def handler_answer_question_input(message: Message, state: FSMContext) -> 
 @dp.message(AddNewTeacher.waiting_name_input)
 async def handle_waiting_teacher_name_input(message: Message, state: FSMContext):
     name = message.text.strip()
-    await state.update_data(teacher_name=name)    
+    await state.update_data(teacher_name=name)
     await message.answer("Введите пароль")
     await state.set_state(AddNewTeacher.waiting_psswd_input)
 
@@ -840,7 +839,7 @@ async def handle_waiting_topic_input(message: Message, state: FSMContext):
     if not topic_id.isdigit():
         await message.answer("Некорректный номер темы. Пожалуйста, введите правильный номер.")
         return
-    
+
     data = await state.get_data()
     module_id = data.get("module_id")
     topic = database_handler.get_topic(module_id, int(topic_id))
@@ -1090,4 +1089,3 @@ async def handler_some_text_selected(message: Message) -> None:
 @dp.message()
 async def handler_some_text(message: Message) -> None:
     await handler_some_text_selected(message)
-

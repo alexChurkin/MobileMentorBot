@@ -32,7 +32,7 @@ class DatabaseHandler():
             INSERT OR IGNORE INTO UserRoles(role_id, role_meaning)
             VALUES (?, ?)
             ''', (role_id, role_meaning,))
-        
+
 
         self.conn.commit()
 
