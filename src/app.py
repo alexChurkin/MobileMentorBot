@@ -755,6 +755,11 @@ async def handler_answer_question_input(message: Message, state: FSMContext) -> 
     database_handler.answer_question(question_id, answer_text)
     await state.set_state(EmptyContext.teacher_empty_context)
     await message.answer("Ответ записан.")
+    username = database_handler.get_question_user(question_id)[0]
+    question_text = database_handler.get_question_text(question_id)[0]
+    msg = f"<b>{username}</b>, учитель ответил на твой вопрос \"{question_text}\"!\n"
+    msg += f"Чтобы посмотреть ответ, используй команду /myquestions."
+    bot.send_message(chat_id=username, text=msg, parse_mode=ParseMode.HTML)
 
 
 @dp.message(AddNewTeacher.waiting_name_input)

@@ -238,6 +238,15 @@ class DatabaseHandler():
         return self.cursor.fetchone()
 
 
+    def get_question_user(self, question_id: int) -> sqlite3.Row:
+        self.cursor.execute('''
+            SELECT user_name
+            FROM Questions
+            WHERE question_id = ?
+        ''', (question_id,))
+        return self.cursor.fetchone()
+
+
     def add_question(self, module_id: int, topic_id: int, user_name: str, question_text: str) -> None:
         self.cursor.execute('''
             INSERT INTO Questions(
