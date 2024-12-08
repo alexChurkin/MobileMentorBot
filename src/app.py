@@ -263,7 +263,7 @@ async def handler_ask_question(message: Message, state: FSMContext) -> None:
 # Обработка команды /deletequestion
 @dp.message(Command("deletequestion"), EmptyContext.pupil_empty_context)
 async def handler_delete_question(message: Message, state: FSMContext) -> None:
-    user_name = message.from_user.full_name
+    user_name = message.from_user.username
     questions = database_handler.get_questions_by_user(user_name)
     if len(questions) > 0:
         question_num = 0
@@ -287,7 +287,7 @@ async def handler_delete_question(message: Message, state: FSMContext) -> None:
 # Обработка команды /myquestions
 @dp.message(Command("myquestions"), EmptyContext.pupil_empty_context)
 async def handler_my_questions(message: Message, state: FSMContext) -> None:
-    user_name = message.from_user.full_name
+    user_name = message.from_user.username
     questions = database_handler.get_questions_by_user(user_name)
     if len(questions) > 0:
         msg = f"Ты задал следующие вопросы:\n"
@@ -533,9 +533,9 @@ async def handle_waiting_answer_for_login(message: Message, state: FSMContext):
     elif msg_text == "Нет":
         await set_menu(pupils_commands)
         pupil_role_id = database_handler.get_role_id(src.constants.PUPIL_ROLE_TEXT)[0]
-        user = database_handler.user_exist(message.from_user.full_name, pupil_role_id)
+        user = database_handler.user_exist(message.from_user.username, pupil_role_id)
         if user is None:
-            database_handler.add_new_pupil(message.from_user.full_name)
+            database_handler.add_new_pupil(message.from_user.username)
             await message.answer("Я сохранил твой профиль. Теперь ты можешь работать")
         else:
             await message.answer("Ты успешно авторизовался")
@@ -549,10 +549,10 @@ async def handle_waiting_answer_for_login(message: Message, state: FSMContext):
 async def handle_waiting_password(message: Message, state: FSMContext):
     msg_text = message.text.strip()
     teacher_role_id = database_handler.get_role_id(src.constants.TEACHER_ROLE_TEXT)[0]
-    user = database_handler.user_exist(message.from_user.full_name, teacher_role_id, msg_text)
+    user = database_handler.user_exist(message.from_user.username, teacher_role_id, msg_text)
     if not user:
         if msg_text == DEFAULT_PSSWD_FOR_TEACHER_LOGIN:
-            database_handler.add_new_teacher(message.from_user.full_name, DEFAULT_PSSWD_FOR_TEACHER_LOGIN)
+            database_handler.add_new_teacher(message.from_user.username, DEFAULT_PSSWD_FOR_TEACHER_LOGIN)
             await set_menu(teachers_commands)
             await state.set_state(EmptyContext.teacher_empty_context)
             await message.answer("Вы успешно авторизовались.")
@@ -706,7 +706,7 @@ async def handler_question_selection_or_input(message: Message, state: FSMContex
         await state.set_state(EmptyContext.pupil_empty_context)
         return
 
-    database_handler.add_question(selected_module_id, selected_topic_id, message.from_user.full_name, msg_text)
+    database_handler.add_question(selected_module_id, selected_topic_id, message.from_user.username, msg_text)
     await message.answer("Хорошо, друг! Я запомнил твой вопрос и вернусь, когда преподаватель ответит на него.")
     await state.set_state(EmptyContext.pupil_empty_context)
 
@@ -718,7 +718,7 @@ async def handle_waiting_p_quesition_number_input(message: Message, state: FSMCo
         await message.answer("Некорректный номер вопроса. Пожалуйста, введи правильный номер.")
         await state.set_state(PupilQuestionSelection.waiting_question_number_input)
 
-    questions = database_handler.get_questions_by_user(message.from_user.full_name)
+    questions = database_handler.get_questions_by_user(message.from_user.username)
     selected_question = int(msg_text)-1
     if selected_question < 0 or selected_question > len(questions):
         await message.answer("Здесь нет вопроса с таким номером.\nПопробуй ввести другой номер.")
@@ -778,7 +778,7 @@ async def handle_waiting_teacher_psswd_input(message: Message, state: FSMContext
 @dp.message(ChangePassword.waiting_psswd_input)
 async def handle_waiting_new_password(message: Message, state: FSMContext):
     msg_text = message.text.strip()
-    database_handler.change_teacher_password(message.from_user.full_name, msg_text)
+    database_handler.change_teacher_password(message.from_user.username, msg_text)
     await state.set_state(EmptyContext.teacher_empty_context)
     await message.answer("Пароль успешно изменён.")
 
