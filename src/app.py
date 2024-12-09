@@ -250,12 +250,12 @@ async def handler_ask_question(message: Message, state: FSMContext) -> None:
             f"{''.join([f'{n+1}. {question[1]}\n' for n, question in enumerate(questions)])}\n"
             f"Введи номер вопроса, на который хочешь узнать ответ.\n"
             f"Если здесь нет твоего вопроса, введи свой вопрос.\n"
-            f"Я отправлю его преподавателю и вернусь к тебе с ответом!",
+            f"Я отправлю его преподавателю!",
             parse_mode=ParseMode.HTML)
     else:
         await message.answer(
             f"Введи свой вопрос по теме «{topic[3]}».\n" #topic_name
-            f"Я отправлю его преподавателю и вернусь к тебе с ответом!")
+            f"Я отправлю его преподавателю!")
 
     await state.set_state(PupilQuestionSelection.waiting_question_input)
 
@@ -398,6 +398,7 @@ async def handler_module(message: Message, state: FSMContext) -> None:
                         #module_id       module_name
             msg += f"<b>{module[0]}.</b> {module[1]}\n"
         await message.answer(msg, parse_mode=ParseMode.HTML)
+        await message.answer("Введите номер модуля")
         await state.set_state(Module.waiting_module_input)
     else:
         await message.answer("Модулей пока нет.")
@@ -414,6 +415,7 @@ async def handler_module(message: Message, state: FSMContext) -> None:
                         #module_id       module_name
             msg += f"<b>{module[0]}.</b> {module[1]}\n"
         await message.answer(msg, parse_mode=ParseMode.HTML)
+        await message.answer("Введите номер модуля")
         await state.set_state(Topic.waiting_module_input)
     else:
         await message.answer("Модулей пока нет.")
